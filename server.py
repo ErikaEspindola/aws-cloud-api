@@ -31,6 +31,13 @@ class Keys(Resource):
 
 api.add_resource(Keys, '/aws_keys')
 
+class InstanceTypes(Resource):
+    def get(self):
+        get_client()
+        return client._service_model.shape_for('InstanceType').enum
+
+api.add_resource(InstanceTypes, '/instace_types')
+
 
 def get_client():
     global client
@@ -44,9 +51,11 @@ def get_client():
 
 class Regions(Resource):
     def get(self):
+  #      try:
         response = client.describe_regions()
         return response['Regions']
-
+#        except Exception as e:
+ #           return {"error": str(e)}
 
 api.add_resource(Regions, '/listar_regioes')
 
