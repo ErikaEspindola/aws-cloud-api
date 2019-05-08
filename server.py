@@ -1,6 +1,6 @@
 from flask import Flask, request
 from flask_cors import CORS, cross_origin
-from flask_restful import Resource, Api
+from flask_restful import Resource, Api, reqparse
 from json import dumps
 from flask_jsonpify import jsonify
 import boto3
@@ -15,6 +15,8 @@ access_key = ''
 secret_key = ''
 
 CORS(app)
+
+parser = reqparse.RequestParser()
 
 
 class Keys(Resource):
@@ -61,20 +63,22 @@ api.add_resource(Regions, '/listar_regioes')
 
 
 class SpotInstance(Resource):
-    def get(self):
+    def post(self):
+        args = request.get_json(force=True)
+
         a = client.request_spot_instances(
             InstanceCount = 1,
-            SpotPrice = "0.105",
+            SpotPrice = args['SpotPrice'],
             LaunchSpecification =  {
-                "ImageId": "ami-0360d18a580e175cc",
-                "InstanceType": "t2.micro",
+                "ImageId": args['ImageId'],
+                "InstanceType": args['InstanceType'],
                 "BlockDeviceMappings": [
                     {
-                        "DeviceName": "/dev/xvda",
+                        "DeviceName": args['DeviceName'],
                         "Ebs": {
                             "DeleteOnTermination": True,
-                            "VolumeType": "gp2",
-                            "VolumeSize": 8
+                            "VolumeType": args['VolumeType'],
+                            "VolumeSize": int(args['VolumeSize'])
                         }
                     }
                 ],
