@@ -40,6 +40,11 @@ class InstanceTypes(Resource):
 
 api.add_resource(InstanceTypes, '/instace_types')
 
+class getInstances(Resource):
+    def get(self):
+        get_client()
+        return client.describe_instances()
+api.add_resource(InstanceTypes, '/get_instances')
 
 def get_client():
     global client
@@ -66,7 +71,7 @@ class SpotInstance(Resource):
     def post(self):
         args = request.get_json(force=True)
 
-        a = client.request_spot_instances(
+        response = client.request_spot_instances(
             InstanceCount = 1,
             SpotPrice = args['SpotPrice'],
             LaunchSpecification =  {
@@ -86,8 +91,8 @@ class SpotInstance(Resource):
             Type="one-time"
         )
 
-        a["SpotInstanceRequests"][0]["CreateTime"] = str(a["SpotInstanceRequests"][0]["CreateTime"])
-        a["SpotInstanceRequests"][0]["Status"]["UpdateTime"] = str(a["SpotInstanceRequests"][0]["Status"]["UpdateTime"])
+        response["SpotInstanceRequests"][0]["CreateTime"] = str(response["SpotInstanceRequests"][0]["CreateTime"])
+        response["SpotInstanceRequests"][0]["Status"]["UpdateTime"] = str(response["SpotInstanceRequests"][0]["Status"]["UpdateTime"])
 
         return a
 
