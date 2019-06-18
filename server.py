@@ -8,6 +8,7 @@ import sys
 import configparser
 import socket
 import requests
+import time
 
 app = Flask(__name__)
 api = Api(app)
@@ -38,13 +39,19 @@ class InstanceTypes(Resource):
         get_client()
         return client._service_model.shape_for('InstanceType').enum
 
-api.add_resource(InstanceTypes, '/instace_types')
+api.add_resource(InstanceTypes, '/instance_types')
 
-class getInstances(Resource):
+class GetInstances(Resource):
     def get(self):
         get_client()
-        return client.describe_instances()
-api.add_resource(InstanceTypes, '/get_instances')
+        response = client.describe_instances()
+        print(response)
+
+        response['Reservations'][0]['Instances'][0]['LaunchTime'] = str(response['Reservations'][0]['Instances'][0]['LaunchTime'])
+
+        return response
+
+api.add_resource(GetInstances, '/get_instances')
 
 def get_client():
     global client
@@ -94,9 +101,29 @@ class SpotInstance(Resource):
         response["SpotInstanceRequests"][0]["CreateTime"] = str(response["SpotInstanceRequests"][0]["CreateTime"])
         response["SpotInstanceRequests"][0]["Status"]["UpdateTime"] = str(response["SpotInstanceRequests"][0]["Status"]["UpdateTime"])
 
-        return a
+        return response
 
 api.add_resource(SpotInstance, '/request_spot_instance')
+
+class SendCommand(Resource):
+    def post(self):
+        # args = request.get_json(force=True)
+
+        ssm = boto3.client('ssm',
+                                region_name='us-east-2',
+                                aws_access_key_id=access_key,
+                                aws_secret_access_key=secret_key)
+
+        testCommand = ssm.send_command(InstanceIds=['i-0cddfadf629ec95c8'], DocumentName='AWS-RunShellScript', Parameters={ "commands":[ "ps aux" ] } )
+
+        time.sleep(5)
+        response = ssm.get_command_invocation(
+            CommandId = testCommand['Command']['CommandId'],
+            InstanceId = testCommand['Command']['InstanceIds'][0]
+        )
+        return response
+
+api.add_resource(SendCommand, '/send_command')
 
 if __name__ == '__main__':
     app.run(port=5002, debug=True)
