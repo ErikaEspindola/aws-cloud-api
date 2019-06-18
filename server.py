@@ -19,57 +19,44 @@ CORS(app)
 
 parser = reqparse.RequestParser()
 
+def get_client(ak, sk):
+    client = boto3.client(
+        'ec2',
+        aws_access_key_id=ak,
+        aws_secret_access_key=sk,
+        region_name='us-east-2'
+    )
 
-class Keys(Resource):
-    def get(self):
-        global access_key
-        access_key = request.args.get('access_key')
-        global secret_key
-        secret_key = request.args.get('secret_key')
-
-        get_client()
-
-        return {'status': 'ok'}
-
-
-api.add_resource(Keys, '/aws_keys')
+    return client
 
 class InstanceTypes(Resource):
-    def get(self):
-        get_client()
+    def post(self):
+        args = request.get_json(force=True)
+        client = get_client(args['ak'], args['sk'])
         return client._service_model.shape_for('InstanceType').enum
 
 api.add_resource(InstanceTypes, '/instance_types')
 
 class GetInstances(Resource):
-    def get(self):
-        get_client()
+    def post(self):
+        args = request.get_json(force=True)
+        client = get_client(args['ak'], args['sk'])
         response = client.describe_instances()
-        print(response)
 
-        response['Reservations'][0]['Instances'][0]['LaunchTime'] = str(response['Reservations'][0]['Instances'][0]['LaunchTime'])
-
+        if(response['Reservations']):
+            response['Reservations'][0]['Instances'][0]['LaunchTime'] = str(response['Reservations'][0]['Instances'][0]['LaunchTime'])
+        else:
+            response = 'Nao existem instancias'
         return response
 
 api.add_resource(GetInstances, '/get_instances')
 
-def get_client():
-    global client
-    client = boto3.client(
-        'ec2',
-        aws_access_key_id=access_key,
-        aws_secret_access_key=secret_key,
-        region_name='us-east-2'
-    )
-
-
 class Regions(Resource):
-    def get(self):
-  #      try:
+    def post(self):
+        args = request.get_json(force=True)
+        client = get_client(args['ak'], args['sk'])
         response = client.describe_regions()
         return response['Regions']
-#        except Exception as e:
- #           return {"error": str(e)}
 
 api.add_resource(Regions, '/listar_regioes')
 
@@ -77,6 +64,7 @@ api.add_resource(Regions, '/listar_regioes')
 class SpotInstance(Resource):
     def post(self):
         args = request.get_json(force=True)
+        client = get_client(args['ak'], args['sk'])
 
         response = client.request_spot_instances(
             InstanceCount = 1,
