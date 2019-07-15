@@ -9,6 +9,7 @@ import configparser
 import socket
 import requests
 import time
+import os
 
 app = Flask(__name__)
 api = Api(app)
@@ -112,6 +113,16 @@ class SendCommand(Resource):
         return response
 
 api.add_resource(SendCommand, '/send_command')
+
+class UploadFile(Resource):
+    def post(self):
+        target = os.path.join('/tmp')
+        file = request.files['file']
+        file_name = file.filename or ''
+        destination = '/'.join([target, file_name])
+        file.save(destination)
+
+api.add_resource(UploadFile, '/upload_file')
 
 if __name__ == '__main__':
     app.run(port=5002, debug=True)
