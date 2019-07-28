@@ -51,6 +51,12 @@ def createSecurityGroup():
     except:
         pass
 
+def createKeyPair(client):
+    try:
+        client.create_key_pair(KeyName='amazonKey')
+    except:
+        pass
+
 def get_client(ak, sk):
     client = boto3.client(
         'ec2',
@@ -125,10 +131,8 @@ class SpotInstance(Resource):
 
 
 
-    def getHostName(self, response):
-        args = request.get_json(force=True)
-        client = get_client(args['ak'], args['sk'])
-
+    def getHostName(self, response, client):
+        print(str(client))
         ec2Rsrc = boto3.resource('ec2')
         requestId = response['SpotInstanceRequests'][0]['SpotInstanceRequestId']
         time.sleep(25)
@@ -150,6 +154,8 @@ class SpotInstance(Resource):
         client = get_client(args['ak'], args['sk'])
 
         createSecurityGroup()
+        createKeyPair(client)
+
         response = client.request_spot_instances(
             InstanceCount = 1,
             SpotPrice = args['SpotPrice'],
@@ -164,9 +170,9 @@ class SpotInstance(Resource):
 
         response["SpotInstanceRequests"][0]["CreateTime"] = str(response["SpotInstanceRequests"][0]["CreateTime"])
         response["SpotInstanceRequests"][0]["Status"]["UpdateTime"] = str(response["SpotInstanceRequests"][0]["Status"]["UpdateTime"])
-        self.sendFiles(self.getHostName(response))
+        self.sendFiles(self.getHostName(response, client))
         print('chamou o sendScript')
-        res = self.sendScript(self.getHostName(response), args['VolumeType'])
+        res = self.sendScript(self.getHostName(response, client), args['command'])
         print ("Voltou pro comeco")
         return res
 
